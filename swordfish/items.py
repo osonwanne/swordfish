@@ -14,4 +14,3 @@ class SwordfishItem(scrapy.Item):
     url = scrapy.Field()
     menu = scrapy.Field()
     swordfish = scrapy.Field()
-    pass
