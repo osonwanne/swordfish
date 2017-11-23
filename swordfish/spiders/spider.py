@@ -1,50 +1,53 @@
-import scrapy, time
+import scrapy, time, logging
 from swordfish.items import SwordfishItem
 
 
 class MySpider(scrapy.Spider):
     name = 'swordfish'
-    allowed_domains = ['yelp.com']
-    
+    # handle_httpstatus_list = [302]
     start_urls = ['https://www.yelp.com/search?find_desc=Seafood+Restaurant&find_loc=Honolulu,+HI']
 
-    # end start_urls
+    def parse(self, response):
+        urls = response.css('.indexed-biz-name .biz-name::attr(href)').extract()
+        for url in urls:
+            request = scrapy.Request(response.urljoin(url) , callback=self.parse_page)
+            yield request
 
-    def parse(self, response):    
-	    urls = response.xpath('//ul[@class="ylist ylist-bordered search-results yloca-pills-blue yloca-wrapper-grey"]/li/div/div/div/div/div/h3/span/a/@href').extract()
-	    for url in urls:            
-	        request = scrapy.Request(response.urljoin(url) , callback=self.parse_page)      
-	        yield request
+        nextpage = response.xpath('//a[contains(@class,"u-decoration-none next pagination-links_anchor")]/@href').extract_first()
+        request1 = scrapy.Request(response.urljoin(nextpage))
+        yield request1
 
-	    nextpage = response.xpath('//a[@class="u-decoration-none next pagination-links_anchor"]/@href').extract_first() 
-	    request1 = scrapy.Request(response.urljoin(nextpage))
-	    yield request1
+    def parse_page(self, response):
+        item = SwordfishItem()
+        name = response.xpath('//h1[@class="biz-page-title embossed-text-white"]/text()').extract_first()
+        menu = ""
+        if response.xpath('//a[@class="external-menu js-external-menu"]/@href').extract_first():
+            menu = str(response.xpath('//a[@class="external-menu js-external-menu"]/@href').extract_first()).split('url=')[-1].replace('%3A',':').replace('%2F','/').replace('&website_link_type=menu','')
+        elif response.xpath('//a[@class="menu-explore js-menu-explore"]/@href').extract_first():
+            menu = response.xpath('//a[@class="menu-explore js-menu-explore"]/@href').extract_first()
+            menu = "https://www.yelp.com" + menu
+        else:
+            menu = ""
+        logging.log(logging.WARNING, menu)
+        item['name'] = self.manual(name)
+        item['url'] = self.manual(response.url)
+        item['menu'] = self.manual(menu)
+        if menu:
+            yield scrapy.Request(menu, callback=self.parse_menu, meta={"item": item})
+        else:
+            item['swordfish'] = "False"
+            return item
 
-	# def parse_page(self, response):
-	# 	item = SwordfishItem()
-
-	#     name = response.xpath('//h1[@class="biz-page-title embossed-text-white shortenough"]/text()').extract_first()
-	    
-	#     #introduce case or if/else
-	#     menu = response.xpath('//a[@class="external-menu js-external-menu"]/@href').extract_first()
-
-	#     # menu = response.xpath('//a[@class="menu-explore js-menu-explore"]/@href').extract_first()
-	#     # menu = "www.yelp.com"+menu
-
-	#     #click on full menu link
-
-
-	#     swordfish = response.xpath('//li[@id="region-zipcode"]/a/text()').extract_first()
-
-	#     item['name'] = self.manual(name)
-	#     item['url'] = self.manual(response.url)
-	#     item['menu'] = self.manual(menu)
-	#     item['swordfish'] = self.manual(swordfish)
-
-	#     return item
+    def parse_menu(self, response):
+        item = response.meta["item"]
+        if response.xpath('//*[contains(text(),"Swordfish") or contains(text(),"SwordFish") or contains(text(),"SWORDFISH") or contains(text(),"swordfish")]/text()').extract():
+            item['swordfish'] = "True"
+        else:
+            item['swordfish'] = "False"
+        return item
 
 
     def manual(self,var_str):
         if var_str is None:
             return ""
-        return var_str
+        return var_str.strip().rstrip()
