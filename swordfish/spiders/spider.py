@@ -36,7 +36,7 @@ class MySpider(scrapy.Spider):
             yield scrapy.Request(menu, callback=self.parse_menu, meta={"item": item})
         else:
             item['swordfish'] = "False"
-            return item
+			# return item
 
     def parse_menu(self, response):
         item = response.meta["item"]
