@@ -28,11 +28,10 @@ class MySpider(scrapy.Spider):
             menu = "https://www.yelp.com" + menu
         else:
             menu = ""
-        logging.log(logging.WARNING, menu)
         item['name'] = self.manual(name)
         item['url'] = self.manual(response.url)
         item['menu'] = self.manual(menu)
-        if menu:
+        if menu and '.pdf' not in menu:
             yield scrapy.Request(menu, callback=self.parse_menu, meta={"item": item})
         else:
             item['swordfish'] = "False"
