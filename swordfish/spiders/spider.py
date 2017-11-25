@@ -5,7 +5,11 @@ from swordfish.items import SwordfishItem
 class MySpider(scrapy.Spider):
     name = 'swordfish'
     # handle_httpstatus_list = [302]
-    start_urls = ['https://www.yelp.com/search?find_desc=Seafood+Restaurant&find_loc=Honolulu,+HI']
+
+    start_urls = ['https://www.yelp.com/search?find_desc=Seafood+Restaurant&find_loc=Boston,+MA']
+    # https://www.yelp.com/search?find_desc=Seafood+Restaurant&find_loc=Honolulu,+HI
+    # https://www.yelp.com/search?find_desc=Seafood+Restaurant&find_loc=New+York,+NY
+    
 
     def parse(self, response):
         urls = response.css('.indexed-biz-name .biz-name::attr(href)').extract()
@@ -35,7 +39,7 @@ class MySpider(scrapy.Spider):
             yield scrapy.Request(menu, callback=self.parse_menu, meta={"item": item})
         else:
             item['swordfish'] = "False"
-            return item
+			# return item
 
     def parse_menu(self, response):
         item = response.meta["item"]

@@ -9,4 +9,5 @@ Python Scrapy web crawler for "swordfish" in Seafood Restaurants on Yelp
 
 3. pip install scrapy
 
-4. scrapy crawl swordfish > honolulu.csv
+4. scrapy crawl swordfish -o boston2.csv -t csv
+
